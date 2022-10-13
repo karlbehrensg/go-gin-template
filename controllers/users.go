@@ -5,14 +5,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/karlbehrensg/go-web-server-template/schemas"
 )
 
 func CreateUser(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-	password2 := c.PostForm("password2")
+	var form schemas.CreateUser
 
-	fmt.Printf("username: %s; password: %s; password2: %s;\n", username, password, password2)
+	if err := c.Bind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	fmt.Printf("username: %s; password: %s; password2: %s;\n", form.Username, form.Password, form.Password2)
 
 	c.String(http.StatusOK, "Hello, World!")
 }
