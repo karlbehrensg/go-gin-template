@@ -37,7 +37,16 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetUsers(c *gin.Context) {
-	c.String(http.StatusOK, "Get Users")
+	var users []models.User
+
+	getUsers := database.DB.Find(&users)
+
+	if getUsers.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": getUsers.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, &users)
 }
 
 func GetUser(c *gin.Context) {
