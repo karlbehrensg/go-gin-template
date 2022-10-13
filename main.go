@@ -1,15 +1,12 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/karlbehrensg/go-web-server-template/routes"
 )
 
 func main() {
-	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello, World!")
-	})
-	r.Run()
+	router := gin.Default()
+	routes.ApplyRoutes(router)
+	router.Run()
 }
