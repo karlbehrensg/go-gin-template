@@ -47,10 +47,29 @@
 			"name": "Users",
 			"item": [
 				{
-					"name": "Get Users",
+					"name": "Update User",
 					"request": {
-						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NjU3MTg4NDEsIlVzZXJJRCI6NH0.YhHjL5BUkVwPpHioW0-YPCtADFOUlf3xoSLthBIBQxo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Karl Behrens\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "{{go_web_server_template_base_url}}/users",
 							"host": [
@@ -64,23 +83,37 @@
 					"response": []
 				},
 				{
-					"name": "Get User",
+					"name": "Delete User",
 					"request": {
-						"method": "GET",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NjU3MTg4NDEsIlVzZXJJRCI6NH0.YhHjL5BUkVwPpHioW0-YPCtADFOUlf3xoSLthBIBQxo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{go_web_server_template_base_url}}/users/1",
+							"raw": "{{go_web_server_template_base_url}}/users",
 							"host": [
 								"{{go_web_server_template_base_url}}"
 							],
 							"path": [
-								"users",
-								"1"
+								"users"
 							]
 						}
 					},
 					"response": []
-				},
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
 				{
 					"name": "Create User",
 					"request": {
@@ -107,57 +140,46 @@
 							]
 						},
 						"url": {
-							"raw": "{{go_web_server_template_base_url}}/users",
+							"raw": "{{go_web_server_template_base_url}}/auth/signup",
 							"host": [
 								"{{go_web_server_template_base_url}}"
 							],
 							"path": [
-								"users"
+								"auth",
+								"signup"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Update User",
+					"name": "Login",
 					"request": {
-						"method": "PUT",
+						"method": "POST",
 						"header": [],
 						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Karl Behrens\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "karl@fake.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "12345",
+									"type": "text"
 								}
-							}
+							]
 						},
 						"url": {
-							"raw": "{{go_web_server_template_base_url}}/users/1",
+							"raw": "{{go_web_server_template_base_url}}/auth/login",
 							"host": [
 								"{{go_web_server_template_base_url}}"
 							],
 							"path": [
-								"users",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete User",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{go_web_server_template_base_url}}/users/1",
-							"host": [
-								"{{go_web_server_template_base_url}}"
-							],
-							"path": [
-								"users",
-								"1"
+								"auth",
+								"login"
 							]
 						}
 					},

@@ -140,3 +140,28 @@ func (user *User) Update(data *schemas.UpdateUser, token string) error {
 
 	return nil
 }
+
+func (user *User) Delete(token string) error {
+	jwt_validated, err := user.ValidateToken(token)
+
+	if err != nil {
+		return err
+	}
+
+	payload_user_id := fmt.Sprint(jwt_validated.Claims.(*schemas.JWTPayload).UserID)
+
+	if user_err := user.GetUserById(payload_user_id); user_err != nil {
+		return user_err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	deleteUser := database.DB.WithContext(ctx).Delete(&user)
+
+	if deleteUser.Error != nil {
+		return deleteUser.Error
+	}
+
+	return nil
+}

@@ -19,7 +19,14 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	access_token := strings.Split(c.GetHeader("Authorization"), "Bearer ")[1]
+	access_token := c.GetHeader("Authorization")
+
+	if access_token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Access token is required"})
+		return
+	}
+
+	access_token = strings.Split(access_token, "Bearer ")[1]
 
 	if err := user.Update(&form, access_token); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -41,22 +48,21 @@ func UpdateUser(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	var user models.User
 
-	getUser := database.DB.First(&user, c.Param("id"))
+	access_token := c.GetHeader("Authorization")
 
-	if getUser.Error != nil {
-		if getUser.Error.Error() == "record not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": getUser.Error.Error()})
-	}
-
-	deleteUser := database.DB.Delete(&user)
-
-	if deleteUser.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": deleteUser.Error.Error()})
+	if access_token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Access token is required"})
 		return
 	}
+
+	access_token = strings.Split(access_token, "Bearer ")[1]
+
+	if err := user.Delete(access_token); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	database.DB.Delete(&user)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted"})
 }
