@@ -10,7 +10,6 @@ import (
 
 func CreateUser(c *gin.Context) {
 	var form schemas.CreateUser
-	var response schemas.UserData
 	var user models.User
 
 	if err := c.Bind(&form); err != nil {
@@ -18,9 +17,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	err := user.Register(&form)
-
-	if err != nil {
+	if err := user.Register(&form); err != nil {
 		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_go_gin_users_username\" (SQLSTATE 23505)" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
 			return
@@ -32,18 +29,19 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	response.ID = user.ID
-	response.Username = user.Username
-	response.Name = user.Name
-	response.CreatedAt = user.CreatedAt.String()
-	response.UpdatedAt = user.UpdatedAt.String()
+	response := &schemas.UserData{
+		ID:        user.ID,
+		Username:  user.Username,
+		Name:      user.Name,
+		CreatedAt: user.CreatedAt.String(),
+		UpdatedAt: user.UpdatedAt.String(),
+	}
 
 	c.JSON(http.StatusCreated, &response)
 }
 
 func Login(c *gin.Context) {
 	var form schemas.Login
-	var response schemas.LoginResponse
 	var user models.User
 
 	if err := c.Bind(&form); err != nil {
@@ -58,8 +56,10 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	response.AccessToken = access_token
-	response.RefreshToken = refresh_token
+	response := &schemas.LoginResponse{
+		AccessToken:  access_token,
+		RefreshToken: refresh_token,
+	}
 
 	c.JSON(http.StatusOK, &response)
 }
