@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karlbehrensg/go-web-server-template/database"
 	"github.com/karlbehrensg/go-web-server-template/models"
 	"github.com/karlbehrensg/go-web-server-template/schemas"
 )
@@ -19,7 +18,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	err := user.Register(&form, database.DB)
+	err := user.Register(&form)
 
 	if err != nil {
 		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_go_gin_users_username\" (SQLSTATE 23505)" {
@@ -52,7 +51,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	access_token, refresh_token, err := user.Login(&form, database.DB)
+	access_token, refresh_token, err := user.Login(&form)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})

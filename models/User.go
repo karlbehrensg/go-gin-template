@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/karlbehrensg/go-web-server-template/database"
 	"github.com/karlbehrensg/go-web-server-template/schemas"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -30,7 +31,7 @@ func (user *User) HashPassword(password string) error {
 	return nil
 }
 
-func (user *User) Register(form *schemas.CreateUser, db *gorm.DB) error {
+func (user *User) Register(form *schemas.CreateUser) error {
 	if form.Password != form.Password2 {
 		return errors.New("Passwords do not match")
 	}
@@ -45,7 +46,7 @@ func (user *User) Register(form *schemas.CreateUser, db *gorm.DB) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	createUser := db.WithContext(ctx).Create(&user)
+	createUser := database.DB.WithContext(ctx).Create(&user)
 
 	if createUser.Error != nil {
 		return createUser.Error
@@ -54,10 +55,10 @@ func (user *User) Register(form *schemas.CreateUser, db *gorm.DB) error {
 	return nil
 }
 
-func (user *User) GetUser(username string, db *gorm.DB) error {
+func (user *User) GetUser(username string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+	return database.DB.WithContext(ctx).Where("username = ?", username).First(&user).Error
 }
 
 func (user *User) ValidatePassword(password string) bool {
@@ -88,8 +89,8 @@ func (user *User) CreateTokens() (string, string) {
 	return access_token_string, refresh_token_string
 }
 
-func (user *User) Login(form *schemas.Login, db *gorm.DB) (string, string, error) {
-	err := user.GetUser(form.Username, db)
+func (user *User) Login(form *schemas.Login) (string, string, error) {
+	err := user.GetUser(form.Username)
 
 	if err != nil {
 		return "", "", err
