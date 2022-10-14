@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/karlbehrensg/go-web-server-template/database"
@@ -11,40 +12,27 @@ import (
 
 func UpdateUser(c *gin.Context) {
 	var form schemas.UpdateUser
+	var user models.User
 
 	if err := c.Bind(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var user models.User
+	access_token := strings.Split(c.GetHeader("Authorization"), "Bearer ")[1]
 
-	getUser := database.DB.First(&user, c.Param("id"))
-
-	if getUser.Error != nil {
-		if getUser.Error.Error() == "record not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": getUser.Error.Error()})
-	}
-
-	user.Name = form.Name
-
-	updateUser := database.DB.Save(&user)
-
-	if updateUser.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": updateUser.Error.Error()})
+	if err := user.Update(&form, access_token); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var response schemas.UserData
-
-	response.ID = user.ID
-	response.Username = user.Username
-	response.Name = user.Name
-	response.CreatedAt = user.CreatedAt.String()
-	response.UpdatedAt = user.UpdatedAt.String()
+	response := &schemas.UserData{
+		ID:        user.ID,
+		Username:  user.Username,
+		Name:      user.Name,
+		CreatedAt: user.CreatedAt.String(),
+		UpdatedAt: user.UpdatedAt.String(),
+	}
 
 	c.JSON(http.StatusOK, &response)
 

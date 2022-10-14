@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -37,9 +38,8 @@ func (user *User) Register(form *schemas.CreateUser) error {
 	}
 
 	user.Username = form.Username
-	err := user.HashPassword(form.Password)
 
-	if err != nil {
+	if err := user.HashPassword(form.Password); err != nil {
 		return err
 	}
 
@@ -59,6 +59,12 @@ func (user *User) GetUser(username string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return database.DB.WithContext(ctx).Where("username = ?", username).First(&user).Error
+}
+
+func (user *User) GetUserById(username string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return database.DB.WithContext(ctx).Where("id = ?", username).First(&user).Error
 }
 
 func (user *User) ValidatePassword(password string) bool {
@@ -89,10 +95,14 @@ func (user *User) CreateTokens() (string, string) {
 	return access_token_string, refresh_token_string
 }
 
-func (user *User) Login(form *schemas.Login) (string, string, error) {
-	err := user.GetUser(form.Username)
+func (user *User) ValidateToken(token string) (*jwt.Token, error) {
+	return jwt.ParseWithClaims(token, &schemas.JWTPayload{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+}
 
-	if err != nil {
+func (user *User) Login(form *schemas.Login) (string, string, error) {
+	if err := user.GetUser(form.Username); err != nil {
 		return "", "", err
 	}
 
@@ -103,4 +113,30 @@ func (user *User) Login(form *schemas.Login) (string, string, error) {
 	access_token, refresh_token := user.CreateTokens()
 
 	return access_token, refresh_token, nil
+}
+
+func (user *User) Update(data *schemas.UpdateUser, token string) error {
+	jwt_validated, err := user.ValidateToken(token)
+
+	if err != nil {
+		return err
+	}
+
+	payload_user_id := fmt.Sprint(jwt_validated.Claims.(*schemas.JWTPayload).UserID)
+
+	if user_err := user.GetUserById(payload_user_id); user_err != nil {
+		return user_err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	user.Name = data.Name
+	updateUser := database.DB.WithContext(ctx).Save(&user)
+
+	if updateUser.Error != nil {
+		return updateUser.Error
+	}
+
+	return nil
 }
