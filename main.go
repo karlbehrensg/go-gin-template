@@ -20,6 +20,7 @@ func main() {
 	database.DB.AutoMigrate(&models.User{}, &models.Task{})
 
 	router := gin.Default()
+	routes.AuthRoutes(router)
 	routes.ApplyRoutes(router)
 	router.Run(":" + port)
 }

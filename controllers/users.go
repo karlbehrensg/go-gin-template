@@ -9,45 +9,6 @@ import (
 	"github.com/karlbehrensg/go-web-server-template/schemas"
 )
 
-func CreateUser(c *gin.Context) {
-	var form schemas.CreateUser
-	var user models.User
-
-	if err := c.Bind(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if form.Password != form.Password2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
-		return
-	}
-
-	user.Username = form.Username
-	user.Password = form.Password
-
-	createUser := database.DB.Create(&user)
-
-	if createUser.Error != nil {
-		if createUser.Error.Error() == "ERROR: duplicate key value violates unique constraint \"idx_go_gin_users_username\" (SQLSTATE 23505)" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": createUser.Error.Error()})
-		return
-	}
-
-	var response schemas.UserData
-
-	response.ID = user.ID
-	response.Username = user.Username
-	response.Name = user.Name
-	response.CreatedAt = user.CreatedAt.String()
-	response.UpdatedAt = user.UpdatedAt.String()
-
-	c.JSON(http.StatusCreated, &response)
-}
-
 func GetUsers(c *gin.Context) {
 	var users []models.User
 
