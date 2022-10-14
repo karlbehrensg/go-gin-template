@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/karlbehrensg/go-web-server-template/schemas"
 	"golang.org/x/crypto/bcrypt"
@@ -20,26 +19,61 @@ type User struct {
 	Password string `gorm:"not null"`
 }
 
-func (u *User) GetUser(username string, db *gorm.DB) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return db.WithContext(ctx).Where("username = ?", username).First(&u).Error
+func (user *User) HashPassword(password string) error {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+
+	if err != nil {
+		return err
+	}
+
+	user.Password = string(bytes)
+	return nil
 }
 
-func (u *User) ValidatePassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+func (user *User) Register(form *schemas.CreateUser, db *gorm.DB) error {
+	if form.Password != form.Password2 {
+		return errors.New("Passwords do not match")
+	}
+
+	user.Username = form.Username
+	err := user.HashPassword(form.Password)
+
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createUser := db.WithContext(ctx).Create(&user)
+
+	if createUser.Error != nil {
+		return createUser.Error
+	}
+
+	return nil
+}
+
+func (user *User) GetUser(username string, db *gorm.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+}
+
+func (user *User) ValidatePassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
 }
 
-func (u *User) CreateTokens() (string, string) {
+func (user *User) CreateTokens() (string, string) {
 	access_token_payload := &schemas.JWTPayload{
-		UserID: u.ID,
+		UserID: user.ID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 		},
 	}
 	refresh_token_payload := &schemas.JWTPayload{
-		UserID: u.ID,
+		UserID: user.ID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24 * 7).Unix(),
 		},
@@ -54,18 +88,18 @@ func (u *User) CreateTokens() (string, string) {
 	return access_token_string, refresh_token_string
 }
 
-func (u *User) Login(form *schemas.Login, c *gin.Context, db *gorm.DB) (string, string, error) {
-	err := u.GetUser(form.Username, db)
+func (user *User) Login(form *schemas.Login, db *gorm.DB) (string, string, error) {
+	err := user.GetUser(form.Username, db)
 
 	if err != nil {
 		return "", "", err
 	}
 
-	if !u.ValidatePassword(form.Password) {
+	if !user.ValidatePassword(form.Password) {
 		return "", "", errors.New("Invalid password")
 	}
 
-	access_token, refresh_token := u.CreateTokens()
+	access_token, refresh_token := user.CreateTokens()
 
 	return access_token, refresh_token, nil
 }

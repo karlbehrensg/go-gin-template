@@ -1,20 +1,17 @@
 package controllers
 
 import (
-	"context"
-	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/karlbehrensg/go-web-server-template/database"
 	"github.com/karlbehrensg/go-web-server-template/models"
 	"github.com/karlbehrensg/go-web-server-template/schemas"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(c *gin.Context) {
 	var form schemas.CreateUser
+	var response schemas.UserData
 	var user models.User
 
 	if err := c.Bind(&form); err != nil {
@@ -22,38 +19,19 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	if form.Password != form.Password2 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
-		return
-	}
-
-	bytes, err := bcrypt.GenerateFromPassword([]byte(form.Password), 14)
+	err := user.Register(&form, database.DB)
 
 	if err != nil {
-		log.Println("Error hashing password")
-		c.JSON(http.StatusInternalServerError, "Something went wrong")
-		return
-	}
-
-	user.Username = form.Username
-	user.Password = string(bytes)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	createUser := database.DB.WithContext(ctx).Create(&user)
-
-	if createUser.Error != nil {
-		log.Println(createUser.Error)
-		if createUser.Error.Error() == "ERROR: duplicate key value violates unique constraint \"idx_go_gin_users_username\" (SQLSTATE 23505)" {
+		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_go_gin_users_username\" (SQLSTATE 23505)" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
+			return
+		} else if err.Error() == "Passwords do not match" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong"})
 		return
 	}
-
-	var response schemas.UserData
 
 	response.ID = user.ID
 	response.Username = user.Username
@@ -62,20 +40,19 @@ func CreateUser(c *gin.Context) {
 	response.UpdatedAt = user.UpdatedAt.String()
 
 	c.JSON(http.StatusCreated, &response)
-
 }
 
 func Login(c *gin.Context) {
 	var form schemas.Login
-	var user models.User
 	var response schemas.LoginResponse
+	var user models.User
 
 	if err := c.Bind(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	access_token, refresh_token, err := user.Login(&form, c, database.DB)
+	access_token, refresh_token, err := user.Login(&form, database.DB)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
