@@ -64,3 +64,26 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, &response)
 
 }
+
+func Login(c *gin.Context) {
+	var form schemas.Login
+	var user models.User
+	var response schemas.LoginResponse
+
+	if err := c.Bind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	access_token, refresh_token, err := user.Login(&form, c, database.DB)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+	response.AccessToken = access_token
+	response.RefreshToken = refresh_token
+
+	c.JSON(http.StatusOK, &response)
+}
